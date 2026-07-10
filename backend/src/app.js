@@ -4,6 +4,8 @@ import express from "express";
 import http from "http";
 import {Server} from "socket.io";
 import cors from "cors";
+import {rooms} from "./utils/constants.js";
+import { startNextTurn } from "./services/startNextTurn.js";
 
 const app = express();
 app.use(express.json());
@@ -24,23 +26,43 @@ const io = new Server(server, {
     }
 });
 
-const rooms = new Map();
-
 io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    socket.on("join_room", ({roomId, playerName}) => {
+    socket.on("join_room", ({roomId, playerName, totalRounds}) => {
         socket.join(roomId);
 
-        if(!rooms.has(roomId)) rooms.set(roomId, {players: [], currentWord: "apple"});
+        if(!rooms.has(roomId)) rooms.set(roomId, {
+            players: [], 
+            currentWord: "",
+            status: "waiting",
+            totalRounds: parseInt(totalRounds) || 3,
+            currentRound: 1,
+            currentDrawerIndex: 0,
+            hostId: socket.id,
+        });
 
         const room = rooms.get(roomId);
-
         const newPlayer = {id: socket.id, name: playerName, score: 0};
         room.players.push(newPlayer);
 
+        socket.emit("game_state", {
+            status: room.status,
+            isHost: room.hostId === socket.id,
+        });
+
         io.to(roomId).emit("update_players", room.players);
         io.to(roomId).emit("system_message", `${playerName} joined the room!`);
+    });
+
+    socket.on("start_game", (roomId) => {
+        const room = room.get(roomId);
+
+        if(room && room.hostId === socket.id && room.status === "waiting") {
+            room.status = "playing";
+            io.to(roomId).emit("game_state", {status: "playing"});
+            startNextTurn(io, roomId);
+        }
     })
 
     socket.on("draw_data", ({roomId, strokeData}) => {
@@ -57,6 +79,8 @@ io.on("connection", (socket) => {
             const player = room.players.find(p => p.id === socket.id);
             if(player)
                 player.score += 10;
+
+            startNextTurn(io, roomId);
         }
         io.to(roomId).emit("update_players", room.players);
         io.to(roomId).emit("receive_chat", {playerName, text});
