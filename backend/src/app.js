@@ -32,21 +32,35 @@ io.on("connection", (socket) => {
     socket.on("join_room", ({roomId, playerName}) => {
         socket.join(roomId);
 
-        if(!rooms.has(roomId)) rooms.set(roomId, {players: []});
+        if(!rooms.has(roomId)) rooms.set(roomId, {players: [], currentWord: "apple"});
 
         const room = rooms.get(roomId);
 
         const newPlayer = {id: socket.id, name: playerName, score: 0};
         room.players.push(newPlayer);
 
-        console.log(`${playerName} joined room: ${roomId}`);
-
         io.to(roomId).emit("update_players", room.players);
+        io.to(roomId).emit("system_message", `${playerName} joined the room!`);
     })
 
     socket.on("draw_data", ({roomId, strokeData}) => {
         socket.to(roomId).emit("draw_data", strokeData);
     });
+
+    socket.on("send_chat", ({roomId, playerName, text}) => {
+        const room = rooms.get(roomId);
+        if(!room) return;
+
+        if(text.toLowerCase() === room.currentWord.toLowerCase()) {
+            io.to(roomId).emit("system_message", `${playerName} guessed the word!`);
+
+            const player = room.players.find(p => p.id === socket.id);
+            if(player)
+                player.score += 10;
+        }
+        io.to(roomId).emit("update_players", room.players);
+        io.to(roomId).emit("receive_chat", {playerName, text});
+    })
 
     socket.on("disconnect", () => {
         console.log(`User disconnected: ${socket.id}`);
@@ -55,9 +69,11 @@ io.on("connection", (socket) => {
             const playerIndex = room.players.findIndex(p => p.id === socket.id);
 
             if(playerIndex !== -1) {
+                const playerName = room.players[playerIndex].name;
                 room.players.splice(playerIndex, 1);
 
                 io.to(roomId).emit("update_players", room.players);
+                io.to(roomId).emit("system_message", `${playerName} left the room!`);
 
                 if(room.players.length === 0)
                     rooms.delete(roomId);

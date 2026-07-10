@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import * as fabric from "fabric";
 import {io} from "socket.io-client";
 import LandingPage from "./pages/LandingPage.jsx";
+import ChatSection from "./components/ChatSection.jsx";
 
 const socket = io("http://localhost:3000");
 
@@ -106,6 +107,8 @@ function App() {
           <canvas ref={canvasRef} />
         </div>
 
+        <ChatSection socket={socket} roomId={roomId} playerName={playerName} />
+        
       </div>
     </section>
   )
