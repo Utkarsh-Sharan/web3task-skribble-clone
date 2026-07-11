@@ -75,7 +75,7 @@ io.on("connection", (socket) => {
             io.to(roomId).emit("your_turn", { word: room.currentWord });
             io.to(roomId).emit("system_message", "The word has been chosen! Start guessing.");
 
-            room.timeLeft = 10;
+            room.timeLeft = 60;
             io.to(roomId).emit('timer_update', room.timeLeft);
 
             room.timerInterval = setInterval(() => {
