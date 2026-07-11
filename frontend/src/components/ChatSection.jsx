@@ -5,7 +5,7 @@ function ChatSection({ socket, roomId, playerName }) {
     const [messages, setMessages] = useState([]);
     const [currentMessage, setCurrentMessage] = useState("");
     const chatEndRef = useRef(null);
-    const {currentDrawer} = useGameStore();
+    const {currentDrawer, gameState} = useGameStore();
 
     const sendMessage = () => {
         if (currentMessage.trim() !== "") {
@@ -52,7 +52,7 @@ function ChatSection({ socket, roomId, playerName }) {
                     onChange={(e) => setCurrentMessage(e.target.value)}
                     placeholder="Type your guess..."
                     className="flex-1 p-2 outline-none"
-                    disabled={socket.id === currentDrawer}
+                    disabled={socket.id === currentDrawer || gameState !== "playing"}
                 />
                 <button onClick={sendMessage} className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">
                     Send

@@ -1,6 +1,6 @@
-import { rooms } from "../utils/constants.js";
+import { getRandomWords, rooms } from "../utils/constants.js";
 
-function clearRoomTimer(room) {
+export const clearRoomTimer = (room) => {
     if(room.timerInterval) {
         clearInterval(room.timerInterval);
         room.timerInterval = null;
@@ -19,39 +19,30 @@ export const startNextTurn = (io, roomId) => {
     }
 
     if(room.currentRound > room.totalRounds) {
+        const highScorePlayer = room.players.reduce((max, player) => 
+            player.score > max.score ? player : max
+        );
+
         room.status = "game_over";
-        io.to(roomId).emit("game_state", {status: "game_over"});
+        io.to(roomId).emit("game_state", {status: "game_over", winner: highScorePlayer.name});
         io.to(roomId).emit("system_message", "Game over! Thanks for playing!");
         return;
     }
 
     const drawer = room.players[room.currentDrawerIndex];
-    room.currentWord = "banana";
+
+    room.status = "choosing";
+    room.currentWord = "";
 
     io.to(roomId).emit("turn_start", {
         drawerId: drawer.id,
         drawerName: drawer.name,
         round: room.currentRound,
         totalRounds: room.totalRounds,
+        status: "choosing",
     });
 
-    io.to(roomId).emit("your_turn", {word: room.currentWord});
-    io.to(roomId).emit("system_message", `Round ${room.currentRound}: It's ${drawer.name}'s turn to draw!`);
-
-    room.timeLeft = 60;
-
-    room.timerInterval = setInterval(() => {
-        room.timeLeft--;
-
-        io.to(roomId).emit("timer_update", room.timeLeft);
-
-        if(room.timeLeft <= 0) {
-            clearRoomTimer(room);
-
-            io.to(roomId).emit("system_message", `Time's up! The word was: ${room.currentWord}`);
-
-            ++room.currentDrawerIndex;
-            startNextTurn(io, roomId);
-        }
-    }, 1000);
+    const choices = getRandomWords(3);
+    io.to(drawer.id).emit("choose_word", choices);
+    io.to(roomId).emit("system_message", `Waiting for ${drawer.name} to choose a word...`);
 }
