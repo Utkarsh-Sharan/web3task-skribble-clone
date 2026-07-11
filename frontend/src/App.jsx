@@ -7,7 +7,7 @@ import GameHeader from "./components/GameHeader.jsx";
 import { useGameStore } from "./store/useGameStore.js";
 import useCanvas from "./hooks/useCanvas.jsx";
 
-const socket = io("http://localhost:3000");
+const socket = io("https://skribbl-clone-backend-eqju.onrender.com");
 
 function App() {
   const [roomId, setRoomId] = useState("");
