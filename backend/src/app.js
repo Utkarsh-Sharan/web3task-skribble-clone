@@ -56,7 +56,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("start_game", (roomId) => {
-        const room = room.get(roomId);
+        const room = rooms.get(roomId);
 
         if(room && room.hostId === socket.id && room.status === "waiting") {
             room.status = "playing";

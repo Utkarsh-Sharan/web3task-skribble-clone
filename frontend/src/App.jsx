@@ -3,6 +3,9 @@ import * as fabric from "fabric";
 import {io} from "socket.io-client";
 import LandingPage from "./pages/LandingPage.jsx";
 import ChatSection from "./components/ChatSection.jsx";
+import GameHeader from "./components/GameHeader.jsx";
+import { useGameStore } from "./store/useGameStore.js";
+import useCanvas from "./hooks/useCanvas.jsx";
 
 const socket = io("http://localhost:3000");
 
@@ -11,83 +14,41 @@ function App() {
   const [playerName, setPlayerName] = useState("");
   const [inRoom, setInRoom] = useState(false);
   const [players, setPlayers] = useState([]);
-
+  const [totalRounds, setTotalRounds] = useState(3);
+  
   const canvasRef = useRef(null);
   const fabricCanvasInstance = useRef(null);
-
+  
+  const {currentDrawer} = useGameStore();
+  
   const joinRoom = () => {
     if(roomId !== "" && playerName !== "") {
       socket.emit("join_room", {roomId, playerName});
       setInRoom(true);
     }
   }
-
-  useEffect(() => {
-    const handleUpdatedPlayers = (updatedPlayerList) => {
-      setPlayers(updatedPlayerList);
-    }
-
-    socket.on("update_players", handleUpdatedPlayers);
   
+  useEffect(() => {
+    socket.on("update_players", (updatedPlayerList) => setPlayers(updatedPlayerList));
+    
     return () => {
-      socket.off("update_players", handleUpdatedPlayers);
+      socket.off("update_players");
     }
   }, []);
   
-
   useEffect(() => {
-    if (!inRoom) return;
-    if (fabricCanvasInstance.current) return;
-
-    const canvas = new fabric.Canvas(canvasRef.current, {
-      isDrawingMode: true,
-      width: 800,
-      height: 600,
-      backgroundColor: '#ffffff'
-    });
-
-    const brush = new fabric.PencilBrush(canvas);
-    brush.color = '#000000';
-    brush.width = 5;
-    canvas.freeDrawingBrush = brush;
-
-    fabricCanvasInstance.current = canvas;
-
-    canvas.on('path:created', (e) => {
-      const strokeData = e.path.toJSON();
-      socket.emit('draw_data', { roomId, strokeData });
-    });
-
-    const handleIncomingDraw = (strokeData) => {
-      if (fabricCanvasInstance.current) {
-        fabric.Path.fromObject(strokeData).then((path) => {
-          path.set({ selectable: false }); 
-          fabricCanvasInstance.current.add(path);
-          fabricCanvasInstance.current.renderAll();
-        });
-      }
-    };
-
-    socket.on('draw_data', handleIncomingDraw);
-
-    return () => {
-      socket.off('draw_data', handleIncomingDraw);
-      if (fabricCanvasInstance.current) {
-        fabricCanvasInstance.current.dispose();
-        fabricCanvasInstance.current = null;
-      }
-    };
-  }, [inRoom, roomId]);
+    if(fabricCanvasInstance.current)
+      fabricCanvasInstance.current.isDrawingMode = socket.id === currentDrawer;
+  }, [currentDrawer]);
+  
+  useCanvas({inRoom, roomId, fabricCanvasInstance, canvasRef, socket});
   
   if(!inRoom) 
-    return <LandingPage joinRoom={joinRoom} setRoomId={setRoomId} setPlayerName={setPlayerName} />
+    return <LandingPage joinRoom={joinRoom} setRoomId={setRoomId} setPlayerName={setPlayerName} totalRounds={totalRounds} setTotalRounds={setTotalRounds} />
 
   return (
     <section className="flex flex-col h-screen items-center justify-center bg-gray-100 gap-4 p-4">
-      <div className="flex justify-between w-full max-w-5xl bg-white p-4 rounded-xl shadow-md">
-        <h2 className="text-xl font-bold text-gray-700">Room: {roomId}</h2>
-        <span className="text-sm bg-green-100 text-green-700 py-1 px-3 rounded-full font-medium">Connected as {playerName}</span>
-      </div>
+      <GameHeader roomId={roomId} socket={socket} fabricCanvasInstance={fabricCanvasInstance} />
       
       <div className="flex w-full max-w-5xl gap-4">
         
@@ -95,8 +56,10 @@ function App() {
           <h3 className="font-bold text-lg mb-4 border-b pb-2">Players</h3>
           <ul className="flex flex-col gap-2">
             {players.length > 0 && players.map((player) => (
-              <li key={player.id} className="flex justify-between items-center bg-gray-50 p-2 rounded border">
-                <span className="font-medium">{player.name} {player.id === socket.id ? "(You)" : ""}</span>
+              <li key={player.id} className={`flex justify-between items-center p-2 rounded border ${player.id === currentDrawer ? 'bg-yellow-100 border-yellow-400' : 'bg-gray-50'}`}>
+                <span className="font-medium">
+                  {player.name} {player.id === socket.id ? "(You)" : ""} {player.id === currentDrawer && "✏️"}
+                </span>
                 <span className="text-sm font-bold text-blue-600">{player.score}</span>
               </li>
             ))}
@@ -108,7 +71,6 @@ function App() {
         </div>
 
         <ChatSection socket={socket} roomId={roomId} playerName={playerName} />
-        
       </div>
     </section>
   )
