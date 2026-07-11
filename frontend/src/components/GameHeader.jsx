@@ -7,6 +7,7 @@ function GameHeader({roomId, socket, fabricCanvasInstance}) {
   const [isHost, setIsHost] = useState(false);
   const [secretWord, setSecretWord] = useState("");
   const [roundInfo, setRoundInfo] = useState({ current: 0, total: 0 });
+  const [timeLeft, setTimeLeft] = useState(0);
   const {currentDrawer, setCurrentDrawer} = useGameStore();
 
   const handleStart = () => socket.emit("start_game", roomId);
@@ -30,6 +31,8 @@ function GameHeader({roomId, socket, fabricCanvasInstance}) {
     });
 
     socket.on("your_turn", (data) => setSecretWord(data.word));
+
+    socket.on("timer_update", (time) => setTimeLeft(time));
   
     return () => {
       socket.off("game_state");
@@ -38,7 +41,6 @@ function GameHeader({roomId, socket, fabricCanvasInstance}) {
     }
   }, []);
   
-
   return (
     <section className="flex justify-between items-center w-full max-w-6xl bg-white p-4 rounded-xl shadow-md">
         <article>
@@ -47,6 +49,12 @@ function GameHeader({roomId, socket, fabricCanvasInstance}) {
             {gameState === "playing" && 
             <p className="text-sm font-semibold text-gray-500">Round {roundInfo.current} / {roundInfo.total}</p>}
         </article>
+
+        {gameState === "playing" && (
+            <div className={`text-3xl font-black ${timeLeft <= 10 ? 'text-red-600 animate-pulse' : 'text-gray-800'}`}>
+                ⏱ {timeLeft}s
+            </div>
+        )}
 
         {gameState === "waiting" && isHost && (
             <button onClick={handleStart} className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-bold shadow-md transition">

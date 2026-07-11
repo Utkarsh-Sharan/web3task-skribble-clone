@@ -40,6 +40,8 @@ io.on("connection", (socket) => {
             currentRound: 1,
             currentDrawerIndex: 0,
             hostId: socket.id,
+            timeLeft: 0,
+            timerInterval: null,
         });
 
         const room = rooms.get(roomId);
@@ -80,6 +82,7 @@ io.on("connection", (socket) => {
             if(player)
                 player.score += 10;
 
+            ++room.currentDrawerIndex;
             startNextTurn(io, roomId);
         }
         io.to(roomId).emit("update_players", room.players);
