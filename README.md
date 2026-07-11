@@ -29,7 +29,7 @@ A full-stack, real-time multiplayer drawing and guessing game inspired by Skribb
 
 ## 📦 Installation and Local Setup
 
-To run this project locally, you will need two terminal windows—one for the backend server and one for the frontend client.
+To run this project locally, you will need two terminal windows, one for the backend server and one for the frontend client.
 
 ### Prerequisites
 * Node.js (v16 or higher)
