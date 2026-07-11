@@ -2,6 +2,9 @@
 
 A full-stack, real-time multiplayer drawing and guessing game inspired by Skribbl.io. Built with the MERN stack (currently utilizing in-memory state for real-time performance) and WebSockets, this project features isolated game rooms, a turn-based drawing system, and live chat guessing.
 
+## Live Link
+https://skribbl-clone-frontend-l5pb.onrender.com/
+
 ## 🚀 Features
 
 * **Real-Time Canvas Syncing:** Smooth, instantaneous stroke sharing across all clients in a room using `Fabric.js` and `Socket.IO`.
