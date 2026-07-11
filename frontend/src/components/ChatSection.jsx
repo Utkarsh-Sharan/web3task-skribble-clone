@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react"
+import { useGameStore } from "../store/useGameStore.js";
 
 function ChatSection({ socket, roomId, playerName }) {
     const [messages, setMessages] = useState([]);
     const [currentMessage, setCurrentMessage] = useState("");
     const chatEndRef = useRef(null);
+    const {currentDrawer, gameState} = useGameStore();
 
     const sendMessage = () => {
         if (currentMessage.trim() !== "") {
@@ -32,7 +34,7 @@ function ChatSection({ socket, roomId, playerName }) {
     }, [messages]);
 
     return (
-        <div className="w-72 bg-white flex flex-col rounded-lg shadow-md border overflow-hidden">
+        <section className="w-72 h-96 bg-white flex flex-col rounded-lg shadow-md border overflow-hidden">
             <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-2 bg-gray-50">
                 {messages.map((msg, index) => (
                     <div key={index} className={`text-sm ${msg.type === 'system' ? 'text-green-600 font-bold text-center italic' : 'text-gray-800'}`}>
@@ -50,12 +52,13 @@ function ChatSection({ socket, roomId, playerName }) {
                     onChange={(e) => setCurrentMessage(e.target.value)}
                     placeholder="Type your guess..."
                     className="flex-1 p-2 outline-none"
+                    disabled={socket.id === currentDrawer || gameState !== "playing"}
                 />
                 <button onClick={sendMessage} className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">
                     Send
                 </button>
             </article>
-        </div>
+        </section>
     )
 }
 
